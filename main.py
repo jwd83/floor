@@ -44,7 +44,7 @@ def handle_input():
 def draw_floor():
     surface = pygame.surfarray.pixels3d(screen)
     horizon = int(HEIGHT * 0.3)
-    fov = 300  # increase for more zoom-out
+    fov = 500  # increase for more zoom-out
 
     cos_a = math.cos(math.radians(cam_angle))
     sin_a = math.sin(math.radians(cam_angle))
