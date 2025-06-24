@@ -20,47 +20,55 @@ cam_angle = 0.0
 move_speed = 4.0
 turn_speed = 2.5
 
-# Optimized ray table
+# Optimized ray table (precalculate for all pixels)
 ray_dx = np.array([x - WIDTH // 2 for x in range(WIDTH)])
+sin_a = np.sin(np.radians(cam_angle))
+cos_a = np.cos(np.radians(cam_angle))
 
 
 def handle_input():
-    global cam_x, cam_y, cam_angle
+    global cam_x, cam_y, cam_angle, sin_a, cos_a
     keys = pygame.key.get_pressed()
-    rad = math.radians(cam_angle)
-
     if keys[pygame.K_w]:
-        cam_x += math.cos(rad) * move_speed
-        cam_y += math.sin(rad) * move_speed
+        cam_x += cos_a * move_speed
+        cam_y += sin_a * move_speed
     if keys[pygame.K_s]:
-        cam_x -= math.cos(rad) * move_speed
-        cam_y -= math.sin(rad) * move_speed
+        cam_x -= cos_a * move_speed
+        cam_y -= sin_a * move_speed
     if keys[pygame.K_a]:
         cam_angle -= turn_speed
     if keys[pygame.K_d]:
         cam_angle += turn_speed
+
+    # Update trig values after changing cam_angle
+    sin_a = np.sin(np.radians(cam_angle))
+    cos_a = np.cos(np.radians(cam_angle))
 
 
 def draw_floor():
     surface = pygame.surfarray.pixels3d(screen)
     horizon = int(HEIGHT * 0.2)
     fov = 500  # increase for more zoom-out
-
-    cos_a = math.cos(math.radians(cam_angle))
-    sin_a = math.sin(math.radians(cam_angle))
+    depth = np.zeros(WIDTH, dtype=np.float32)
 
     for y in range(horizon, HEIGHT):
-        depth = fov / (y - horizon + 0.001)
+        depth[:] = fov / (y - horizon + 0.001)
 
+        # Efficient vectorized computation for all pixels at once
+        offset = ray_dx * depth / 100
+        world_x = cam_x + (cos_a * depth) - (sin_a * offset)
+        world_y = cam_y + (sin_a * depth) + (cos_a * offset)
+
+        # Wrap around texture coordinates
+        tx = (world_x.astype(int)) % track_width
+        ty = (world_y.astype(int)) % track_height
+
+        # Retrieve pixel colors for all x in one go (using vectorized access)
         for x in range(WIDTH):
-            offset = ray_dx[x]
-            world_x = cam_x + (cos_a * depth) - (sin_a * offset * depth / 100)
-            world_y = cam_y + (sin_a * depth) + (cos_a * offset * depth / 100)
-
-            # Wrap around
-            tx = int(world_x) % track_width
-            ty = int(world_y) % track_height
-            surface[x, y] = track.get_at((tx, ty))[:3]
+            color = track.get_at((tx[x], ty[x]))[
+                :3
+            ]  # Access each tx, ty pair as tuples
+            surface[x, y] = color
 
 
 def main():
