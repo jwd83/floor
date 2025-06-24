@@ -5,8 +5,8 @@ import sys
 
 # Init
 pygame.init()
-WIDTH, HEIGHT = 800, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+WIDTH, HEIGHT = 320, 180
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.SCALED | pygame.RESIZABLE)
 clock = pygame.time.Clock()
 
 # Load and scale the track texture for better horizontal space
@@ -15,7 +15,7 @@ track = pygame.transform.scale(track, (1024, 1024))
 track_width, track_height = track.get_size()
 
 # Camera state
-cam_x, cam_y = 512, 512  # center of image
+cam_x, cam_y = 300, 300  # center of image
 cam_angle = 0.0
 move_speed = 4.0
 turn_speed = 2.5
